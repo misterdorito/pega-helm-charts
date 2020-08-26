@@ -39,7 +39,7 @@ metadata:
 {{- end }}
 {{- if (.node.ingress.redirectToPegaSSO) }}
     alb.ingress.kubernetes.io/actions.redirect-to-pega-sso: '{"Type":"redirect","RedirectConfig":{"Host":"#{host}","Path":"/prweb/PRAuth/SSO","Port":"443","Protocol":"HTTPS","StatusCode":"HTTP_302"}}'
-    alb.ingress.kubernetes.io/conditions.redirect-to-pega-sso: '[{"Field":"host-header","HostHeaderConfig":{"Values":["{{ template "domainName" dict "node" .node }}"]}},{"Field":"path-pattern","PathPatternConfig":{"Values":["/"]}}]'
+    
 {{- end }}
 spec:
   rules:
@@ -64,15 +64,23 @@ spec:
     http:
       paths:
 {{- if (.node.ingress.redirectToPegaSSO) }}
-      - path /
+      - path: /
         backend:
           serviceName: redirect-to-pega-sso
           servicePort: use-annotation
-      - path /*
+      - path: /*
         backend:
           serviceName: {{ .name }}
           servicePort: {{ .node.service.port }}          
 {{ else }}
+      - backend:
+          serviceName: {{ .name }}
+          servicePort: {{ .node.service.port }}
+{{- end }}
+{{- if (.node.ingress.altHost) }}
+  - host: {{ .node.ingress.altHost }}
+    http:
+      paths:
       - backend:
           serviceName: {{ .name }}
           servicePort: {{ .node.service.port }}
